@@ -21,6 +21,7 @@ import fr.insee.rmes.metadata.utils.DocumentBuilderUtils;
 import fr.insee.rmes.search.model.DDIItemType;
 import fr.insee.rmes.utils.ddi.DDIDocumentBuilder;
 import fr.insee.rmes.utils.ddi.Envelope;
+import fr.insee.rmes.webservice.rest.RMeSException;
 
 @Service
 public class FragmentInstanceServiceImpl implements FragmentInstanceService {
@@ -96,6 +97,8 @@ public class FragmentInstanceServiceImpl implements FragmentInstanceService {
 		String itemTypeName = "";
 		if (itemTypes == null || itemTypes.length == 0) {
 			itemTemp = metadataServiceItem.getItem(idTopLevel);
+			itemTypeName = itemTemp.getType().getName();
+			item = itemTemp;
 		} else {
 			for (DDIItemType ddiItemType : itemTypes) {
 				try {
@@ -104,8 +107,10 @@ public class FragmentInstanceServiceImpl implements FragmentInstanceService {
 						itemTypeName = item.getType().getName();
 					}
 				} catch (Exception e) {
-					item = itemTemp;
-					itemTypeName = item.getType().getName();
+					if (itemTemp != null) {
+						item = itemTemp;
+						itemTypeName = item.getType().getName();
+					}
 				}
 			}
 
@@ -132,6 +137,10 @@ public class FragmentInstanceServiceImpl implements FragmentInstanceService {
 			docBuilder.appendChild(itemNode);
 		}
 		return docBuilder.toString();
+	}
+
+	public void setMetadataServiceItem(MetadataServiceItem metadataServiceItem) {
+		this.metadataServiceItem = metadataServiceItem;
 	}
 
 }

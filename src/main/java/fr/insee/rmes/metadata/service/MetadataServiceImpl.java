@@ -13,9 +13,12 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import fr.insee.rmes.metadata.model.ColecticaItem;
+import fr.insee.rmes.metadata.model.Relationship;
+import fr.insee.rmes.metadata.model.ObjectColecticaPost;
 import fr.insee.rmes.metadata.model.Unit;
 import fr.insee.rmes.metadata.repository.GroupRepository;
 import fr.insee.rmes.metadata.repository.MetadataRepository;
+import fr.insee.rmes.metadata.utils.DocumentBuilderUtils;
 import fr.insee.rmes.metadata.utils.XpathProcessor;
 import fr.insee.rmes.search.model.DDIItemType;
 import fr.insee.rmes.search.model.ResourcePackage;
@@ -45,8 +48,6 @@ public class MetadataServiceImpl implements MetadataService {
 
 	@Override
 	public List<Unit> getUnits() throws Exception {
-		// getCodeList("a72e6e56-12a1-49b7-96c4-c724da3da5da",
-		// "c265b595-ced2-4526-88dc-151471de885d");
 		return metadataRepository.getUnits();
 	}
 
@@ -295,15 +296,7 @@ public class MetadataServiceImpl implements MetadataService {
 
 	@Override
 	public String getDerefDDIDocumentWithExternalRP(String itemId, String resourcePackageId) throws Exception {
-		List<ColecticaItem> items = metadataServiceItem.getItems(metadataServiceItem.getChildrenRef(itemId));
-		Map<String, String> refs = items.stream().filter(item -> null != item)
-				.collect(Collectors.toMap(ColecticaItem::getIdentifier, item -> {
-					try {
-						return xpathProcessor.queryString(item.getItem(), "/Fragment/*");
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-				}));
+		Map<String, String> refs = getChildrenRefs(itemId);
 		ResourcePackage resourcePackage = getResourcePackage(resourcePackageId);
 		refs.putAll(resourcePackage.getReferences());
 		return new DDIDocumentBuilder()
@@ -314,6 +307,11 @@ public class MetadataServiceImpl implements MetadataService {
 
 	@Override
 	public String getDerefDDIDocument(String itemId) throws Exception {
+		Map<String, String> refs = getChildrenRefs(itemId);
+		return new DDIDocumentBuilder().buildItemDocument(itemId, refs).build().toString();
+	}
+
+	private Map<String, String> getChildrenRefs(String itemId) throws Exception {
 		List<ColecticaItem> items = metadataServiceItem.getItems(metadataServiceItem.getChildrenRef(itemId));
 		Map<String, String> refs = items.stream().filter(item -> null != item)
 				.collect(Collectors.toMap(ColecticaItem::getIdentifier, item -> {
@@ -323,25 +321,16 @@ public class MetadataServiceImpl implements MetadataService {
 						throw new RuntimeException(e);
 					}
 				}));
-		return new DDIDocumentBuilder().buildItemDocument(itemId, refs).build().toString();
+		return refs;
 	}
 
 	public ResourcePackage getResourcePackage(String id) throws Exception {
 		ResourcePackage resourcePackage = new ResourcePackage(id);
-		List<ColecticaItem> items = metadataServiceItem.getItems(metadataServiceItem.getChildrenRef(id));
-		Map<String, String> refs = items.stream().filter(item -> null != item)
-				.collect(Collectors.toMap(ColecticaItem::getIdentifier, item -> {
-					try {
-						return xpathProcessor.queryString(item.getItem(), "/Fragment/*");
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-				}));
+		Map<String, String> refs = getChildrenRefs(id);
 		resourcePackage.setReferences(refs);
 		return resourcePackage;
 	}
 
-	
 	@Override
 	public List<String> getGroupIds() throws Exception {
 		return groupRepository.getRootIds();
@@ -356,12 +345,6 @@ public class MetadataServiceImpl implements MetadataService {
 	public String getDDIDocument(String itemId) throws Exception {
 		// TODO Auto-generated method stub
 		return "Test";
-	}
-
-	@Override
-	public String getItemByType(String id, DDIItemType type) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override
@@ -380,6 +363,16 @@ public class MetadataServiceImpl implements MetadataService {
 	public String getQuestion(String id) throws Exception {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public Relationship[] getRelationship(ObjectColecticaPost relationshipPost) throws Exception {
+		return metadataRepository.getRelationship(relationshipPost);
+	}
+
+	@Override
+	public Relationship[] getRelationshipChildren(ObjectColecticaPost relationshipPost) throws Exception {
+		return metadataRepository.getRelationshipChildren(relationshipPost);
 	}
 
 	
